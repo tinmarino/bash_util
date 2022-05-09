@@ -12,7 +12,8 @@ tmux pipe-pane "$(declare -f tmux_pipe); tmux_pipe \"$(tty)\""
 
 
 old(){
-tmux pipe-pane "ansi=\"\\x1B\\[[0-9;?>]*[mKHhlC]\";
+tmux pipe-pane "
+  ansi=\"\\x1B\\[[0-9;?>]*[mKHhlC]\";
   pre=\"$(tty)\";
   pre=\${pre##/dev/};
   exec cat - \
@@ -21,7 +22,8 @@ tmux pipe-pane "ansi=\"\\x1B\\[[0-9;?>]*[mKHhlC]\";
       gsub(/\x0d/,\"\");
       gsub(ansi,\"\");
       print pre \" \" date \" \" \$0
-    }' >> $HOME/Test/tmux.log"
+    }' >> $HOME/Test/tmux.log
+  "
 
   : " Inspired from: https://github.com/tmux-plugins/tmux-logging/blob/master/scripts/start_logging.sh
   "

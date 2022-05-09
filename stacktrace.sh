@@ -1,4 +1,12 @@
 # shellcheck disable=SC2059  # Don't use variables in 
+# From https://www.runscripts.com/support/guides/scripting/bash/debugging-bash/stack-trace
+
+gs_root_path=$(readlink -f "${BASH_SOURCE[0]}")
+gs_root_path=$(dirname "$gs_root_path");
+
+# Source the dipatcher utility
+source "$gs_root_path/test_stacktrace.sh"
+
 stacktrace ()
 {
    declare frame=0
@@ -30,7 +38,6 @@ stacktrace ()
        echo ":: ${caller_info[2]}: Line ${caller_info[0]}: ${caller_info[1]}"
    fi
 }
-
 
 spawn(){
   # Fork
@@ -119,8 +126,6 @@ bidon(){
 }
 
 
-
-
 print_stack(){
   ### Print current stack trace to stderr
   local -i i=0 j=0 k=0
@@ -134,10 +139,37 @@ print_stack(){
   shopt -q extdebug || >&2 printf "# Note: run 'shopt -s extdebug' to see call arguments\n"
 }
 
-test_print_stack(){
-  second(){ print_stack; }
-  first(){ second toto; }
-  first
+
+stacktrace ()
+{
+   declare frame=0
+   declare argv_offset=0
+
+   while caller_info=( $(caller $frame) ) ; do
+
+       if shopt -q extdebug ; then
+
+           declare argv=()
+           declare argc
+           declare frame_argc
+
+           for ((frame_argc=${BASH_ARGC[frame]},frame_argc--,argc=0; frame_argc >= 0; argc++, frame_argc--)) ; do
+               argv[argc]=${BASH_ARGV[argv_offset+frame_argc]}
+               case "${argv[argc]}" in
+                   *[[:space:]]*) argv[argc]="'${argv[argc]}'" ;;
+               esac
+           done
+           argv_offset=$((argv_offset + ${BASH_ARGC[frame]}))
+           echo ":: ${caller_info[2]}: Line ${caller_info[0]}: ${caller_info[1]}(): ${FUNCNAME[frame]} ${argv[*]}"
+       fi
+
+       frame=$((frame+1))
+   done
+
+   if [[ $frame -eq 1 ]] ; then
+       caller_info=( $(caller 0) )
+       echo ":: ${caller_info[2]}: Line ${caller_info[0]}: ${caller_info[1]}"
+   fi
 }
 
 
